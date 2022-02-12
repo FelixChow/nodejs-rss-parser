@@ -1,0 +1,19 @@
+{
+  "name": "nodejs-rss-parser",
+  "version": "1.0.0",
+  "description": "To make it easy for you to get started with GitLab, here's a list of recommended next steps.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/FelixChow/nodejs-rss-parser.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/FelixChow/nodejs-rss-parser/issues"
+  },
+  "homepage": "https://gitlab.com/FelixChow/nodejs-rss-parser#readme"
+}
