@@ -1,0 +1,17 @@
+solr:
+  host: localhost
+  port: 8983
+  core: playground
+
+dbconfig:
+  connectionLimit: 10
+  host: localhost
+  user: root
+  password: password
+  database: rss
+
+rss:
+  - url: https://news.mingpao.com/rss/ins/all.xml
+  - url: https://orientaldaily.on.cc/rss/news.xml
+  - url: https://menclub.hk/etc/rss.php
+  - url: https://chinese.engadget.com/rss.xml
