@@ -4,34 +4,34 @@ const fs = require("fs");
 const { dbconfig } = yaml.load(fs.readFileSync("config.yaml", "utf-8"));
 const topic = yaml.load(fs.readFileSync("topic.yaml", "utf-8"));
 const mysql = require("mysql2/promise");
-var pool = mysql.createPool(dbconfig);
 
 (async () => {
-  await pool
-    .getConnection()
-    .then(async (conn) => {
+  const pool = mysql.createPool(dbconfig);
+  try {
+    await pool.getConnection().then(async (conn) => {
       await conn.beginTransaction();
-      for (let { name } of topic) {
-        await conn
-          .query("INSERT INTO topic SET ?", {
-            topic: name,
-            hash_id: md5(name),
-            count: 1,
-          })
-          .then((res) => {
-            console.log(res);
-          })
-          .catch((err) => {
-            console.error(err);
-            conn.rollback();
-            throw err;
-          });
+      try {
+        for (let { name } of topic) {
+          await conn.query(
+            "INSERT INTO topic SET ? ON DUPLICATE KEY UPDATE count = count + 1",
+            {
+              topic: name,
+              hash_id: md5(name),
+              count: 1,
+            }
+          );
+        }
+        await conn.commit();
+      } catch (e) {
+        await conn.rollback();
+        throw e;
+      } finally {
+        conn.release();
       }
-      conn.commit();
-      conn.release();
-    })
-    .catch((err) => {
-      console.error(err);
     });
-  await pool.end();
+  } catch (e) {
+    console.error(e);
+  } finally {
+    await pool.end();
+  }
 })();
