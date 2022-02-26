@@ -3,9 +3,15 @@ const parser = new Parser();
 const yaml = require("js-yaml");
 const fs = require("fs");
 const axios = require("axios").default;
-const { solr, dbconfig } = yaml.load(fs.readFileSync("config.yaml", "utf-8"));
+const { solr, dbconfig, kafkaconfig } = yaml.load(
+  fs.readFileSync("config.yaml", "utf-8")
+);
 const mysql = require("mysql2/promise");
 const md5 = require("md5");
+const { Kafka, CompressionTypes } = require("kafkajs");
+const kafka = new Kafka(kafkaconfig);
+const producer = kafka.producer();
+const tagQueue = "tag-queue";
 
 (async () => {
   const pool = mysql.createPool(dbconfig);
@@ -17,7 +23,6 @@ const md5 = require("md5");
       .then((res) => res[0]);
     conn.release();
     console.debug(rss);
-    // return;
     await Promise.all(
       rss.map(async (src) => {
         let { id, url, last_hash } = src;
@@ -27,9 +32,10 @@ const md5 = require("md5");
 
         if (feed == undefined) return;
 
-        conn = await pool.getConnection();
+        // conn = await pool.getConnection();
+        let messages = [];
         for (let item of feed.items) {
-          if (!!last_hash && last_hash == md5(item.link)) break;
+          // if (!!last_hash && last_hash == md5(item.link)) break;
           await axios
             .post(solrquery, item.contentSnippet, {
               headers: { "Content-Type": "text/plain" },
@@ -39,24 +45,28 @@ const md5 = require("md5");
               // res.data.response: {numFound: 1, start: 0, numFoundExact: true, docs: Array(1)}
               if (numFound > 0) {
                 tag = docs.map(({ id }) => id);
-                let topic = newTopic(item, tag);
-                console.debug(topic);
-                await conn
-                  .query("INSERT INTO push_queue SET ?", newTopic(item, tag))
-                  .catch((e) => console.error(e));
-                await conn.commit();
+                messages.push(producePayload(item, tag));
+                // await conn
+                //   .query("INSERT INTO push_queue SET ?", newTopic(item, tag))
+                //   .catch((e) => console.error(e));
+                // await conn.commit();
               }
             })
             .catch((e) => {
               console.error(e);
             });
-          // title
-          // link
-          // contentSnippet
-          // isoDate
-          console.debug(item);
+          // { title, link, contentSnippet, isoDate }
+          // console.debug(item);
         }
-        // conn = await pool.getConnection();
+        if (messages.length > 0) {
+          await producer.connect();
+          await producer.send({
+            topic: tagQueue,
+            messages,
+            compression: CompressionTypes.GZIP,
+          });
+        }
+        conn = await pool.getConnection();
         await conn
           .query("UPDATE rss_source SET last_hash = ? WHERE id = ?", [
             md5(feed.items[0].link),
@@ -74,6 +84,7 @@ const md5 = require("md5");
     console.error(e);
   } finally {
     await pool.end();
+    await producer.disconnect();
   }
 })();
 
@@ -83,6 +94,10 @@ function newTopic({ title, link, contentSnippet, isoDate }, tag) {
     link: link.trim(/[\s\t]/gm, ""),
     contentSnippet,
     isoDate: new Date(isoDate),
-    tag: tag.join(","),
+    tag,
   };
+}
+
+function producePayload(item, tag) {
+  return { value: JSON.stringify(newTopic(item, tag)) };
 }

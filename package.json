@@ -22,6 +22,7 @@
     "axios": "^0.26.0",
     "google-protobuf": "^3.19.4",
     "js-yaml": "^4.1.0",
+    "kafkajs": "^1.16.0",
     "md5": "^2.3.0",
     "mysql2": "^2.3.3",
     "rss-parser": "^3.12.0"

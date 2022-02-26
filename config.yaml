@@ -10,6 +10,9 @@ dbconfig:
   password: password
   database: rss
 
+kafkaconfig:
+  brokers: [localhost:9092]
+
 solr_service:
   host: 0.0.0.0
   port: 50051
