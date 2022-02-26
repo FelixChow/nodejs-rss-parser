@@ -17,7 +17,10 @@
   },
   "homepage": "https://gitlab.com/FelixChow/nodejs-rss-parser#readme",
   "dependencies": {
+    "@grpc/grpc-js": "^1.5.7",
+    "@grpc/proto-loader": "^0.6.9",
     "axios": "^0.26.0",
+    "google-protobuf": "^3.19.4",
     "js-yaml": "^4.1.0",
     "md5": "^2.3.0",
     "mysql2": "^2.3.3",
