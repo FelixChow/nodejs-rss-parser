@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option objc_class_prefix = "HLW";
+
+package solrservice;
+
+service SolrService {
+    rpc UpdateSolr (SolrRequest) returns (SolrResponse) {}
+    rpc CleanSolr (SolrRequest) returns (SolrResponse) {}
+}
+
+message SolrRequest {
+}
+
+message SolrResponse {
+    bool success = 1;
+    string message = 2;
+}

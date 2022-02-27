@@ -1,0 +1,6 @@
+node_modules
+npm-debug.log
+solr_service
+archive
+.gitlab-ci.yml
+consumer.js

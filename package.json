@@ -4,7 +4,8 @@
   "description": "To make it easy for you to get started with GitLab, here's a list of recommended next steps.",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
   },
   "repository": {
     "type": "git",
@@ -20,8 +21,7 @@
     "@grpc/grpc-js": "^1.5.7",
     "@grpc/proto-loader": "^0.6.9",
     "axios": "^0.26.0",
-    "google-protobuf": "^3.19.4",
-    "js-yaml": "^4.1.0",
+    "cron": "^1.8.2",
     "kafkajs": "^1.16.0",
     "md5": "^2.3.0",
     "mysql2": "^2.3.3",

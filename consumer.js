@@ -26,6 +26,7 @@ const pushQueue = "push-queue";
       JOIN topic t ON ust.topic_id = t.hash_id 
       WHERE topic_id in ('${tag.join("','")}')`;
 
+      await conn.connect();
       let [users, _] = await conn.execute(sql);
       users = users.reduce((acc, curr) => {
         if (!acc[`${curr.user_id}`]) acc[`${curr.user_id}`] = [];
