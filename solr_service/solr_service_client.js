@@ -11,17 +11,23 @@ const packageDefination = protoLoader.loadSync(PROTO_PATH, {
 });
 const solr_proto = grpc.loadPackageDefinition(packageDefination).solrservice;
 
-function main() {
+async function main() {
   target = "0.0.0.0:50051";
   const client = new solr_proto.SolrService(
     target,
     grpc.credentials.createInsecure()
   );
-  client.cleanSolr({}, function (err, response) {
-    console.log(response);
+  await new Promise((resolve, reject) => {
+    client.cleanSolr({}, function (err, response) {
+      console.log(response);
+      resolve(response);
+    });
   });
-  client.updateSolr({}, function (err, response) {
-    console.log(response);
+  await new Promise((resolve, reject) => {
+    client.updateSolr({}, function (err, response) {
+      console.log(response);
+      resolve(response);
+    });
   });
 }
 
