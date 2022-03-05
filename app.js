@@ -1,7 +1,6 @@
 const Parser = require("rss-parser");
 const parser = new Parser();
-const axios = require("axios").default;
-const { solr, dbconfig, kafkaconfig } = require("./config");
+const { dbconfig, kafkaconfig } = require("./config");
 const mysql = require("mysql2/promise");
 const md5 = require("md5");
 const { Kafka, CompressionTypes } = require("kafkajs");
@@ -22,7 +21,6 @@ const job = new CronJob(
         return;
       }
 
-      solrquery = `http://${solr.host}:${solr.port}/solr/${solr.core}/tag?overlaps=NO_SUB&tagsLimit=5000&fl=id,name,countrycode&wt=json&indent=on`;
       conn = await pool.getConnection();
       const rss = await conn
         .query("SELECT * FROM rss_source WHERE enabled = 1")
@@ -37,26 +35,15 @@ const job = new CronJob(
 
           if (feed == undefined) return;
 
+          if (!!last_hash && last_hash == md5(feed.items[0])) return;
+
           let messages = [];
-          for (let item of feed.items) {
-            if (!!last_hash && last_hash == md5(item.link)) break;
-            await axios
-              .post(solrquery, `${item.title}${item.contentSnippet}`, {
-                headers: { "Content-Type": "text/plain" },
-              })
-              .then(async (res) => {
-                let { numFound, docs } = res.data.response;
-                // res.data.response: {numFound: 1, start: 0, numFoundExact: true, docs: Array(1)}
-                if (numFound > 0) {
-                  tag = docs.map(({ id }) => id);
-                  messages.push(producePayload(item, tag));
-                }
-              })
-              .catch((e) => {
-                console.error(e);
-              });
-            // { title, link, contentSnippet, isoDate }
-          }
+          await Promise.all(feed.items.map(async (item) => {
+            await solrgrpc.scanNews(`${item.title}${item.contentSnippet}`).then(({ found, tag }) => {
+              if (found) messages.push(producePayload(item, tag))
+            });
+          }));
+          // { title, link, contentSnippet, isoDate }
           if (messages.length > 0) {
             await producer.connect();
             await producer.send({

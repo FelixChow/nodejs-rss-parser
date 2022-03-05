@@ -38,4 +38,13 @@ async function syncSolr() {
   });
 }
 
-module.exports = { syncSolr };
+async function scanNews(content) {
+  return await new Promise((resolve, reject) => {
+    client.scanNews({ content }, (err, res) => {
+      if (err) reject(err);
+      else resolve(res);
+    });
+  });
+}
+
+module.exports = { syncSolr, scanNews };

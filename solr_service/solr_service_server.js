@@ -11,27 +11,11 @@ const packageDefination = protoLoader.loadSync(PROTO_PATH, {
 });
 const solr_proto = grpc.loadPackageDefinition(packageDefination).solrservice;
 
-const solr = {
-  host: process.env.SOLR_HOST || "localhost",
-  port: process.env.SOLR_PORT || 8983,
-  core: process.env.SOLR_CORE || "playground",
-};
-const dbconfig = {
-  connectionLimit: 10,
-  host: process.env.DB_CONFIG_HOST || "localhost",
-  port: process.env.DB_CONFIG_PORT || 3306,
-  user: process.env.DB_CONFIG_USER || "root",
-  password: process.env.DB_CONFIG_PASSWORD || "password",
-  database: process.env.DB_CONFIG_DATABASE || "rss",
-};
-const solr_service = {
-  host: process.env.SERVER_HOST || "0.0.0.0",
-  port: process.env.SERVER_PORT || 50051,
-};
-
+const { solr, dbconfig, solr_service, } = require('./config');
 const axios = require("axios").default;
 const mysql = require("mysql2/promise");
-const solrquery = `http://${solr.host}:${solr.port}/solr/${solr.core}/update?commit=true`;
+const solrUpdate = `http://${solr.host}:${solr.port}/solr/${solr.core}/update?commit=true`;
+const solrScan = `http://${solr.host}:${solr.port}/solr/${solr.core}/tag?overlaps=NO_SUB&tagsLimit=5000&fl=id,name,countrycode&wt=json&indent=on`;
 
 async function updateSolr(call, callback) {
   console.info(
@@ -43,7 +27,7 @@ async function updateSolr(call, callback) {
     await conn.end();
     await axios
       .post(
-        solrquery,
+        solrUpdate,
         tags.map(({ topic, hash_id }) => ({ name: topic, id: hash_id }))
       )
       .then(() => {
@@ -65,7 +49,7 @@ async function cleanSolr(call, callback) {
   );
   try {
     await axios
-      .post(solrquery, "<delete><query>*:*</query></delete>", {
+      .post(solrUpdate, "<delete><query>*:*</query></delete>", {
         headers: { "Content-Type": "application/xml" },
       })
       .then(() => {
@@ -81,11 +65,41 @@ async function cleanSolr(call, callback) {
   }
 }
 
+async function scanNews(call, callback) {
+  console.info(
+    new Date().toISOString() + "\t" + call.call.handler.path + "\t--"
+  );
+  try {
+    await axios
+      .post(solrScan, `${call.request.content}`, {
+        headers: { "Content-Type": "text/plain" },
+      })
+      .then(async (res) => {
+        let { numFound, docs } = res.data.response;
+        // res.data.response: {numFound: 1, start: 0, numFoundExact: true, docs: Array(1)}
+        if (numFound > 0) {
+          tag = docs.map(({ id }) => id);
+          callback(null, { found: true, tag });
+        } else {
+          callback(null, { found: false, tag: [] });
+        }
+      });
+  } catch (e) {
+    console.error(e);
+    callback(null, { found: false, tag: [] });
+  } finally {
+    console.info(
+      new Date().toISOString() + "\t" + call.call.handler.path + "\t-end-"
+    );
+  }
+}
+
 function main() {
   const server = new grpc.Server();
   server.addService(solr_proto.SolrService.service, {
     updateSolr: updateSolr,
     cleanSolr: cleanSolr,
+    scanNews: scanNews,
   });
   server.bindAsync(
     `${solr_service.host}:${solr_service.port}`,
