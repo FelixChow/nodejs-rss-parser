@@ -36,24 +36,32 @@ const job = new CronJob(
           if (feed == undefined) return;
 
           let last_match = feed.items.findIndex(
-            (it) => last_hash == md5(it.link)
+            (it) => last_hash == md5(it.title)
           );
           if (last_match > -1) feed.items.splice(last_match);
 
           if (feed.items.length == 0) return;
 
           let messages = [];
-          await Promise.all(
+          let snapshot = await Promise.all(
             feed.items.map(async (item) => {
-              await solrgrpc
+              return await solrgrpc
                 .scanNews(`${item.title}${item.contentSnippet}`)
                 .then(({ found, tag }) => {
-                  if (found) messages.push(producePayload(item, tag));
+                  if (found) {
+                    messages.push(producePayload(item, tag));
+                    return item.title;
+                  }
                 });
             })
           );
           // { title, link, contentSnippet, isoDate }
           if (messages.length > 0) {
+            console.info("%o", {
+              timestamp: new Date().toISOString(),
+              source: url,
+              news: snapshot.filter((it) => !!it),
+            });
             messages.reverse();
             await producer.connect();
             await producer.send({
@@ -65,7 +73,7 @@ const job = new CronJob(
           conn = await pool.getConnection();
           await conn
             .query("UPDATE rss_source SET last_hash = ? WHERE id = ?", [
-              md5(feed.items[0].link),
+              md5(feed.items[0].title),
               id,
             ])
             .catch(async (err) => {
