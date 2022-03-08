@@ -6,8 +6,32 @@
 # Note that environment variables can be set in several places
 # See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 stages:
-- test
-sast:
-  stage: test
-include:
-- template: Security/SAST.gitlab-ci.yml
+  - solr-grpc
+  - rss-parser
+
+solr-grpc:
+  image: docker:stable
+  services:
+    - docker:dind
+  stage: solr-grpc
+  script:
+    - docker build -t solr_grpc ./solr_service
+    - docker tag solr_grpc felixchow95/solr_grpc
+    - docker login -u felixchow95 -p $ACCESS_TOKEN
+    - docker push felixchow95/solr_grpc
+  only:
+    - master
+
+rss-parser:
+  image: docker:stable
+  services:
+    - docker:dind
+  stage: rss-parser
+  needs: [solr-grpc]
+  script:
+    - docker build -t rss_parser .
+    - docker tag rss_parser felixchow95/rss_parser
+    - docker login -u felixchow95 -p $ACCESS_TOKEN
+    - docker push felixchow95/rss_parser
+  only:
+    - master
