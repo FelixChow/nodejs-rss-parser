@@ -54,6 +54,7 @@ const job = new CronJob(
           );
           // { title, link, contentSnippet, isoDate }
           if (messages.length > 0) {
+            messages.reverse();
             await producer.connect();
             await producer.send({
               topic: tagQueue,
@@ -84,7 +85,9 @@ const job = new CronJob(
   },
   null,
   true,
-  "Asia/Hong_Kong"
+  "Asia/Hong_Kong",
+  null,
+  true
 );
 
 job.start();
