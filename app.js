@@ -70,6 +70,13 @@ const job = new CronJob(
               compression: CompressionTypes.GZIP,
             });
           }
+          console.info("%o", {
+            timestamp: new Date().toISOString(),
+            source: url,
+            last_hash,
+            next_title: feed.items[0].title,
+            next_hash: md5(feed.items[0].title),
+          });
           conn = await pool.getConnection();
           await conn
             .query("UPDATE rss_source SET last_hash = ? WHERE id = ?", [
