@@ -7,8 +7,7 @@
 # See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 stages:
   - test
-  - solr-grpc
-  - rss-parser
+  - publish
 
 sast:
   stage: test
@@ -19,7 +18,7 @@ solr-grpc:
   image: docker:stable
   services:
     - docker:dind
-  stage: solr-grpc
+  stage: publish
   script:
     - docker build -t solr_grpc ./solr_service
     - docker tag solr_grpc felixchow95/solr_grpc
@@ -32,7 +31,7 @@ rss-parser:
   image: docker:stable
   services:
     - docker:dind
-  stage: rss-parser
+  stage: publish
   needs: [solr-grpc]
   script:
     - docker build -t rss_parser .
