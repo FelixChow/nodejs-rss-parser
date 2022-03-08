@@ -25,7 +25,7 @@ solr-grpc:
     - docker login -u felixchow95 -p $ACCESS_TOKEN
     - docker push felixchow95/solr_grpc
   only:
-    - master
+    - main
 
 rss-parser:
   image: docker:stable
@@ -39,4 +39,4 @@ rss-parser:
     - docker login -u felixchow95 -p $ACCESS_TOKEN
     - docker push felixchow95/rss_parser
   only:
-    - master
+    - main
