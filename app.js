@@ -35,14 +35,23 @@ const job = new CronJob(
 
           if (feed == undefined) return;
 
-          if (!!last_hash && last_hash == md5(feed.items[0])) return;
+          let last_match = feed.items.findIndex(
+            (it) => last_hash == md5(it.link)
+          );
+          if (last_match > -1) feed.items.splice(last_match);
+
+          if (feed.items.length == 0) return;
 
           let messages = [];
-          await Promise.all(feed.items.map(async (item) => {
-            await solrgrpc.scanNews(`${item.title}${item.contentSnippet}`).then(({ found, tag }) => {
-              if (found) messages.push(producePayload(item, tag))
-            });
-          }));
+          await Promise.all(
+            feed.items.map(async (item) => {
+              await solrgrpc
+                .scanNews(`${item.title}${item.contentSnippet}`)
+                .then(({ found, tag }) => {
+                  if (found) messages.push(producePayload(item, tag));
+                });
+            })
+          );
           // { title, link, contentSnippet, isoDate }
           if (messages.length > 0) {
             await producer.connect();

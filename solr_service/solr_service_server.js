@@ -11,7 +11,7 @@ const packageDefination = protoLoader.loadSync(PROTO_PATH, {
 });
 const solr_proto = grpc.loadPackageDefinition(packageDefination).solrservice;
 
-const { solr, dbconfig, solr_service, } = require('./config');
+const { solr, dbconfig, solr_service } = require("./config");
 const axios = require("axios").default;
 const mysql = require("mysql2/promise");
 const solrUpdate = `http://${solr.host}:${solr.port}/solr/${solr.core}/update?commit=true`;
