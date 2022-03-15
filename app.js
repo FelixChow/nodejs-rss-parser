@@ -26,14 +26,24 @@ const job = new CronJob(
         .query("SELECT * FROM rss_source WHERE enabled = 1")
         .then((res) => res[0]);
       conn.release();
+
+      let currenttime = new Date();
+      currenttime.setDate(currenttime.getDate() - 1);
+      let threshold = currenttime.toISOString();
+
       await Promise.all(
         rss.map(async (src) => {
           let { id, url, last_hash } = src;
           let feed = await parser.parseURL(url).catch((e) => {
+            console.error("[ERROR] Error fetching RSS from %s", url);
             console.error(e);
           });
 
           if (feed == undefined) return;
+
+          feed.items = feed.items.filter(
+            (it) => !it.isoDate || it.isoDate > threshold
+          );
 
           let last_match = feed.items.findIndex(
             (it) => last_hash == md5(it.title)
